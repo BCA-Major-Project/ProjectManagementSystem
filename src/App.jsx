@@ -1,72 +1,68 @@
-import React, { useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-
-import Spinner from "./components/Spinner/Spinner";
-import Home from "./components/Home/Home";
-import Auth from "./components/Auth/Auth";
-import Account from "./components/Account/Account";
-
-import { auth, getUserFromDatabase } from "./firebase";
+import { Routes, Route, BrowserRouter, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 import "./App.css";
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userDetails, setUserDetails] = useState({});
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+// pages
+import Dashboard from "./pages/dashboard/Dashboard";
+import Create from "./pages/create/Create";
+import Login from "./pages/login/Login";
+import Signup from "./pages/signup/Signup";
+import Project from "./pages/project/Project";
 
-  const fetchUserDetails = async (uid) => {
-    const userDetails = await getUserFromDatabase(uid);
-    setUserDetails(userDetails);
-    setIsDataLoaded(true);
-  };
+// modal
+
+//components
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import OnlineUsers from "./components/OnlineUsers";
+// import AreaRange from "./components/AreaRange";
+
+function App() {
+  // const { user, authIsReady } = useAuthContext();
+  let user = true
+  let authIsReady = true
+  const [width, setWidth] = useState(window.innerWidth);
+  const breakpoint = 620;
 
   useEffect(() => {
-    const listener = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        setIsDataLoaded(true);
-        setIsAuthenticated(false);
-        return;
-      }
-
-      setIsAuthenticated(true);
-      fetchUserDetails(user.uid);
-    });
-
-    return () => listener();
+    window.addEventListener("resize", () => setWidth(window.innerWidth));
   }, []);
-
   return (
     <div className="App">
-      <Router>
-        {isDataLoaded ? (
-          <Routes>
-            {!isAuthenticated && (
-              <>
-                <Route path="/login" element={<Auth />} />
-                <Route path="/signup" element={<Auth signup />} />
-              </>
-            )}
-            <Route
-              path="/account"
-              element={
-                <Account userDetails={userDetails} auth={isAuthenticated} />
-              }
-            />
-            <Route path="/" element={<Home auth={isAuthenticated} />} />
-            <Route path="/*" element={<Navigate to="/" />} />
-          </Routes>
-        ) : (
-          <div className="spinner">
-            <Spinner />
+      {authIsReady && (
+        <BrowserRouter>
+          {user && <Sidebar></Sidebar>}
+
+          <div className="container">
+            <Navbar />
+
+            <Routes>
+              <Route
+                path="/"
+                element={user ? <Dashboard /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/create"
+                element={user ? <Create /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/signup"
+                element={!user ? <Signup /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/login"
+                element={!user ? <Login /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/projects/:id"
+                element={user ? <Project /> : <Navigate to="/login" />}
+              />
+            </Routes>
           </div>
-        )}
-      </Router>
+          {user && width > breakpoint && <OnlineUsers />}
+        </BrowserRouter>
+      )}
     </div>
   );
 }
